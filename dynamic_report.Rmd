@@ -1,0 +1,79 @@
+---
+title: My dynamic report
+output: html_fragment
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, error=FALSE)
+```
+
+```{css}
+body {
+  font-family: Arial;
+  padding: 10px;
+}
+```
+
+## Baseball Pitches in the MLB and their Outcomes
+
+I recorded data about 30 different MLB pitches across multiple games/days, including the pitcher, the pitch outcome, and pitch velocity (in miles per hour). From this, we can observe some patterns and trends - even with a small sample size.
+
+```{r}
+library(tidyverse)
+
+# Reading in data
+url <- "https://docs.google.com/spreadsheets/d/e/2PACX-1vSYO79arQDWV1R71AOVziDOz3Fm4qbZVKZRuCxgH6--eE6NqvU0aee8bbXvUzffzDuJwLkWgYR6JlnT/pub?gid=38662566&single=true&output=csv"
+logged_data <- read_csv(url)
+
+# Renaming column names
+latest_data <- logged_data %>% 
+  rename(timestamp = Timestamp, 
+         player = "What player threw the pitch?",
+         outcome = "What was the outcome of the pitch?",
+         velocity = "How fast was the pitch? (In miles per hour)")
+```
+
+### Some summary statistics:
+
+```{r}
+# Summary stats
+median_velocity <- median(latest_data[[4]])
+      
+most_frequent_outcome <- latest_data %>% 
+  count(outcome) %>% 
+  filter(n == max(n)) %>%
+  pull(outcome)
+```
+
+- The median pitch velocity was `r median_velocity` miles per hour.
+- The most frequent outcome of a pitch was: `r most_frequent_outcome`.
+
+### Graphs
+
+```{r}
+# Graphs
+
+# Count of each outcome
+ggplot(latest_data, aes(x = outcome)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Pitch Outcomes",
+       x = "Outcome", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The most common pitch outcome observed was by far a ball, in other words, a pitch outside the strike zone. This does make sense as pitchers are allowed 4 balls in an at-bat, as opposed to 3 strikes.
+
+```{r}
+# Average velocity by outcome
+ggplot(latest_data, aes(x = player, y = velocity)) +
+  stat_summary(fun = median, geom = "bar", fill = "steelblue", color = "black") +
+  labs(title = "Median Velocity by Pitcher",
+       x = "Pitcher", y = "Median Velocity (mph)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Here, the pitch velocity by pitcher does show some variation, but given the sample size is relatively small for several different players, it would be difficult to draw too many strong conclusions. 
+
+Dylan Moore is an outlier with a median pitch velocity of 40 miles per hour, as opposed to the overall median of 88 mph. This can be explained by the fact that he is not a pitcher, and was pitching because his team was losing by a large amount (10+ runs) in the late stage of a game. In these scenarios, a non-pitcher chooses to throw very slow to not risk any injuries.
